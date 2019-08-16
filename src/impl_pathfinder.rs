@@ -1,4 +1,3 @@
-use pathfinder_geometry::vector::Vector2F;
 use pathfinder_content::{
     outline::{Contour as PaContour, Outline as PaOutline},
     stroke::{StrokeStyle, LineCap, LineJoin, OutlineStrokeToFill},
@@ -8,36 +7,23 @@ use pathfinder_renderer::{
     scene::{Scene, PathObject},
     paint::Paint
 };
-use crate::{Contour, Vector, Point, Outline};
+pub use pathfinder_geometry::rect::RectF;
+use crate::{Contour, Vector, Surface, Outline, Transform};
 
-impl Point for Vector2F {
-    type Value = f32;
-    
-    fn new(x: f32, y: f32) -> Self {
-        Vector2F::new(x, y)
-    }
-    fn x(&self) -> Self::Value {
-        Vector2F::x(*self)
-    }
-    fn y(&self) -> Self::Value {
-        Vector2F::y(*self)
-    }
-}
 
 impl Contour for PaContour {
-    type Point = Vector2F;
-    fn new(start: Self::Point) -> Self {
+    fn new(start: Vector) -> Self {
         let mut contour = PaContour::new();
         contour.push_endpoint(start);
         contour
     }
-    fn line_to(&mut self, p: Self::Point) {
+    fn line_to(&mut self, p: Vector) {
         self.push_endpoint(p);
     }
-    fn quadratic_curve_to(&mut self, c: Self::Point, p: Self::Point) {
+    fn quadratic_curve_to(&mut self, c: Vector, p: Vector) {
         self.push_quadratic(c, p);
     }
-    fn cubic_curve_to(&mut self, c0: Self::Point, c1: Self::Point, p: Self::Point) {
+    fn cubic_curve_to(&mut self, c0: Vector, c1: Vector, p: Vector) {
         self.push_cubic(c0, c1, p);
     }
     fn close(&mut self) {
@@ -46,7 +32,6 @@ impl Contour for PaContour {
 }
 
 impl Outline for PaOutline {
-    type Point = Vector2F;
     type Contour = PaContour;
     
     fn empty() -> Self {
@@ -55,19 +40,31 @@ impl Outline for PaOutline {
     fn add_contour(&mut self, contour: Self::Contour) {
         self.push_contour(contour);
     }
+    fn add_outline(&mut self, outline: Self) {
+        for contour in outline.contours() {
+            self.push_contour(contour.clone());
+        }
+    }
+    fn transform(mut self, transform: Transform) -> Self {
+        PaOutline::transform(&mut self, &transform);
+        self
+    }
 }
 
-impl Vector for Scene {
-    type Value = f32;
-    type Point = Vector2F;
+impl Surface for Scene {
     type Outline = PaOutline;
     type Color = Paint;
     type StrokeStyle = StrokeStyle;
     
-    fn color_rgba(r: u8, g: u8, b: u8, a: u8) -> Self::Color {
+    fn new(size: Vector) -> Self {
+        let mut scene = Scene::new();
+        scene.set_view_box(RectF::new(Vector::default(), size));
+        scene
+    }
+    fn color_rgba(&mut self, r: u8, g: u8, b: u8, a: u8) -> Self::Color {
         Paint { color: ColorU { r, g, b, a } }
     }
-    fn stoke(width: f32) -> Self::StrokeStyle {
+    fn stroke(&mut self, width: f32) -> Self::StrokeStyle {
         StrokeStyle {
             line_width: width,
             line_cap: LineCap::Butt,

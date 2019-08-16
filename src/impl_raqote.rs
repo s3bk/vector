@@ -1,24 +1,25 @@
-use crate::{Vector, Contour, Outline};
+use crate::{Contour, Outline, Surface, Vector, Transform};
+use raqote::{Point, Path, Winding, PathOp, DrawTarget, Source, SolidSource, StrokeStyle, DrawOptions};
 
-use raqote::{Path, Point, Winding, PathOp, DrawTarget, Source, SolidSource, StrokeStyle, DrawOptions};
-
+fn point(v: Vector) -> Point {
+    Point::new(v.x(), v.y())
+}
 
 impl Contour for Path {
-    type Point = Point;
-    fn new(start: Self::Point) -> Self {
+    fn new(start: Vector) -> Self {
         Path {
-            ops: vec![PathOp::MoveTo(start)],
+            ops: vec![PathOp::MoveTo(point(start))],
             winding: Winding::EvenOdd
         }
     }
-    fn line_to(&mut self, p: Self::Point) {
-        self.ops.push(PathOp::LineTo(p));
+    fn line_to(&mut self, p: Vector) {
+        self.ops.push(PathOp::LineTo(point(p)));
     }
-    fn quadratic_curve_to(&mut self, c: Self::Point, p: Self::Point) {
-        self.ops.push(PathOp::QuadTo(c, p));
+    fn quadratic_curve_to(&mut self, c: Vector, p: Vector) {
+        self.ops.push(PathOp::QuadTo(point(c), point(p)));
     }
-    fn cubic_curve_to(&mut self, c0: Self::Point, c1: Self::Point, p: Self::Point) {
-        self.ops.push(PathOp::CubicTo(c0, c1, p));
+    fn cubic_curve_to(&mut self, c1: Vector, c2: Vector, p: Vector) {
+        self.ops.push(PathOp::CubicTo(point(c1), point(c2), point(p)));
     }
     fn close(&mut self) {
         match self.ops.last() {
@@ -29,7 +30,6 @@ impl Contour for Path {
 }
 
 impl Outline for Path {
-    type Point = Point;
     type Contour = Path;
     
     fn empty() -> Self {
@@ -41,19 +41,37 @@ impl Outline for Path {
     fn add_contour(&mut self, contour: Self::Contour) {
         self.ops.extend_from_slice(&contour.ops);
     }
+    fn add_outline(&mut self, outline: Self) {
+        self.ops.extend_from_slice(&outline.ops);
+    }
+    fn transform(mut self, transform: Transform) -> Self {
+        let tr = |p: Point| point(transform * Vector::new(p.x, p.y));
+        
+        for op in &mut self.ops {
+            *op = match *op {
+                PathOp::MoveTo(p) => PathOp::MoveTo(tr(p)),
+                PathOp::LineTo(p) => PathOp::LineTo(tr(p)),
+                PathOp::QuadTo(c, p) => PathOp::QuadTo(tr(c), tr(p)),
+                PathOp::CubicTo(c1, c2, p) => PathOp::CubicTo(tr(c1), tr(c2), tr(p)),
+                PathOp::Close => PathOp::Close
+            }
+        }
+        self
+    }
 }
 
-impl Vector for DrawTarget {
-    type Value = f32;
-    type Point = Point;
+impl Surface for DrawTarget {
     type Outline = Path;
     type Color = Source<'static>;
     type StrokeStyle = StrokeStyle;
     
-    fn color_rgba(r: u8, g: u8, b: u8, a: u8) -> Source<'static> {
+    fn new(size: Vector) -> Self {
+        DrawTarget::new(size.x().ceil() as i32, size.y().ceil() as i32)
+    }
+    fn color_rgba(&mut self, r: u8, g: u8, b: u8, a: u8) -> Source<'static> {
         Source::Solid(SolidSource { r, g, b, a })
     }
-    fn stoke(width: f32) -> StrokeStyle {
+    fn stroke(&mut self, width: f32) -> StrokeStyle {
         StrokeStyle {
             width,
             .. StrokeStyle::default()

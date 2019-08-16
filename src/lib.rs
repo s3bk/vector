@@ -1,72 +1,85 @@
-extern crate euclid;
 extern crate raqote;
 
-trait Value: Into<f32> {}
+use std::ops::{Add, Sub, Mul, Div};
+
+pub trait Value: Into<f32> + From<f32> + From<i16> + Copy + Sized + Add + Sub + Mul + Div {}
 impl Value for f32 {}
 
-trait Point {
-    type Value: Value;
-    fn new(x: Self::Value, y: Self::Value) -> Self;
-    fn x(&self) -> Self::Value;
-    fn y(&self) -> Self::Value;
-}
-impl Point for (f32, f32) {
-    type Value = f32;
-    fn new(x: f32, y: f32) -> Self {
-        (x, y)
-    }
-    fn x(&self) -> f32 {
-        self.0
-    }
-    fn y(&self) -> f32 {
-        self.1
-    }
-}
+pub use pathfinder_geometry::vector::Vector2F as Vector;
+pub use pathfinder_geometry::transform2d::Transform2F as Transform;
 
-trait Contour {
-    type Point: Point;
-    fn new(start: Self::Point) -> Self;
-    fn line_to(&mut self, p: Self::Point);
-    fn quadratic_curve_to(&mut self, c: Self::Point, p: Self::Point);
-    fn cubic_curve_to(&mut self, c0: Self::Point, c1: Self::Point, p: Self::Point);
+pub trait Contour: Clone + Sized {
+    fn new(start: Vector) -> Self;
+    fn line_to(&mut self, p: Vector);
+    fn quadratic_curve_to(&mut self, c: Vector, p: Vector);
+    fn cubic_curve_to(&mut self, c0: Vector, c1: Vector, p: Vector);
     fn close(&mut self);
 }
 
-trait Outline {
-    type Point: Point;
-    type Contour: Contour<Point = Self::Point>;
+pub trait Outline: Clone + Sized {
+    type Contour: Contour;
     
     fn empty() -> Self;
     fn add_contour(&mut self, contour: Self::Contour);
+    fn add_outline(&mut self, outline: Self);
+    fn transform(self, transform: Transform) -> Self;
 }
-impl<C: Contour> Outline for Vec<C> {
-    type Point = C::Point;
-    type Contour = C;
-    
-    fn empty() -> Self {
-        vec![]
-    }
-    fn add_contour(&mut self, contour: C) {
-        self.push(contour);
-    }
+
+pub struct PathBuilder<O: Outline> {
+    outline: O,
+    contour: Option<O::Contour>
 }
-trait Vector {
-    type Value: Value;
-    type Point: Point<Value=Self::Value>;
-    type Outline: Outline<Point=Self::Point>;
+impl<O: Outline> PathBuilder<O> {
+    pub fn new() -> Self {
+        PathBuilder {
+            outline: O::empty(),
+            contour: None
+        }
+    }
+    pub fn move_to(&mut self, p: Vector) {
+        if let Some(contour) = self.contour.replace(O::Contour::new(p)) {
+            self.outline.add_contour(contour);
+        }
+    }
+    pub fn line_to(&mut self, p: Vector) {
+        self.contour.as_mut().expect("no current contour").line_to(p);
+    }
+    pub fn quadratic_curve_to(&mut self, c: Vector, p: Vector) {
+        self.contour.as_mut().expect("no current contour").quadratic_curve_to(c, p);
+    }
+    pub fn cubic_curve_to(&mut self, c1: Vector, c2: Vector, p: Vector) {
+        self.contour.as_mut().expect("no current contour").cubic_curve_to(c1, c2, p);
+    }
+    pub fn close(&mut self) {
+        if let Some(mut contour) = self.contour.take() {
+            contour.close();
+            self.outline.add_contour(contour);
+        }
+    }
+    pub fn into_outline(mut self) -> O {
+        if let Some(contour) = self.contour.take() {
+            self.outline.add_contour(contour);
+        }
+        self.outline
+    }   
+}
+
+pub trait Surface {
+    type Outline: Outline;
     type Color;
     type StrokeStyle;
     
-    fn color_rgb(r: u8, g: u8, b: u8) -> Self::Color {
-        Self::color_rgba(r, g, b, 255)
+    fn new(size: Vector) -> Self;
+    
+    fn color_rgb(&mut self, r: u8, g: u8, b: u8) -> Self::Color {
+        self.color_rgba(r, g, b, 255)
     }
-    fn color_rgba(r: u8, g: u8, b: u8, a: u8) -> Self::Color;
-    fn stoke(width: Self::Value) -> Self::StrokeStyle;
+    fn color_rgba(&mut self, r: u8, g: u8, b: u8, a: u8) -> Self::Color;
+    fn stroke(&mut self, width: f32) -> Self::StrokeStyle;
     
     fn draw_path(&mut self, path: Self::Outline, fill: Option<Self::Color>, stroke: Option<(Self::Color, Self::StrokeStyle)>);
 }
 
-mod impl_euclid;
 mod impl_raqote;
 mod impl_svg;
 mod impl_pathfinder;
