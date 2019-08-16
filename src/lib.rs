@@ -66,8 +66,8 @@ impl<O: Outline> PathBuilder<O> {
 
 pub trait Surface {
     type Outline: Outline;
-    type Color;
-    type StrokeStyle;
+    type Color: Copy;
+    type StrokeStyle: Copy;
     
     fn new(size: Vector) -> Self;
     
