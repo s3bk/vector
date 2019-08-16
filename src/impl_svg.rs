@@ -28,15 +28,15 @@ impl Surface for Svg {
         width
     }
     
-    fn draw_path(&mut self, path: Self::Outline, fill: Option<Self::Color>, stroke: Option<(Self::Color, Self::StrokeStyle)>) {
+    fn draw_path(&mut self, path: Self::Outline, fill: Option<&Self::Color>, stroke: Option<(&Self::Color, &Self::StrokeStyle)>) {
         (|| {
             write!(self.0, "<path")?;
             
             fn f(u: u8) -> f32 { u as f32 / 255. }
-            if let Some((r, g, b, a)) = fill {
+            if let Some(&(r, g, b, a)) = fill {
                 write!(self.0, " fill=\"rgba({}, {}, {}, {})\"", r, g, b, f(a))?;
             }
-            if let Some(((r, g, b, a), width)) = stroke {
+            if let Some((&(r, g, b, a), &width)) = stroke {
                 write!(self.0, " stroke=\"rgba({}, {}, {}, {})\" stroke-width=\"{}\"", r, g, b, f(a), width)?;
             }
             writeln!(self.0, " d=\"{:?}\" />", path.contours().iter().format(" "))

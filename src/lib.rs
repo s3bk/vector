@@ -66,8 +66,8 @@ impl<O: Outline> PathBuilder<O> {
 
 pub trait Surface {
     type Outline: Outline;
-    type Color: Copy;
-    type StrokeStyle: Copy;
+    type Color;
+    type StrokeStyle;
     
     fn new(size: Vector) -> Self;
     
@@ -77,7 +77,7 @@ pub trait Surface {
     fn color_rgba(&mut self, r: u8, g: u8, b: u8, a: u8) -> Self::Color;
     fn stroke(&mut self, width: f32) -> Self::StrokeStyle;
     
-    fn draw_path(&mut self, path: Self::Outline, fill: Option<Self::Color>, stroke: Option<(Self::Color, Self::StrokeStyle)>);
+    fn draw_path(&mut self, path: Self::Outline, fill: Option<&Self::Color>, stroke: Option<(&Self::Color, &Self::StrokeStyle)>);
 }
 
 mod impl_raqote;

@@ -78,12 +78,12 @@ impl Surface for DrawTarget {
         }
     }
     
-    fn draw_path(&mut self, path: Path, fill: Option<Source>, stroke: Option<(Source, StrokeStyle)>) {
+    fn draw_path(&mut self, path: Path, fill: Option<&Source>, stroke: Option<(&Source, &StrokeStyle)>) {
         if let Some(fill) = fill {
-            self.fill(&path, &fill, &DrawOptions::new());
+            self.fill(&path, fill, &DrawOptions::new());
         }
         if let Some((stroke, style)) = stroke {
-            self.stroke(&path, &stroke, &style, &DrawOptions::new());
+            self.stroke(&path, stroke, style, &DrawOptions::new());
         }
     }
 }

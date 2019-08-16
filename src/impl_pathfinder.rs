@@ -71,14 +71,14 @@ impl Surface for Scene {
             line_join: LineJoin::Miter(width),
         }
     }
-    fn draw_path(&mut self, path: Self::Outline, fill: Option<Self::Color>, stroke: Option<(Self::Color, Self::StrokeStyle)>) {
+    fn draw_path(&mut self, path: Self::Outline, fill: Option<&Self::Color>, stroke: Option<(&Self::Color, &Self::StrokeStyle)>) {
         if let Some((stroke, style)) = stroke {
-            let paint = self.push_paint(&stroke);
-            let outline = OutlineStrokeToFill::new(&path, style).into_outline();
+            let paint = self.push_paint(stroke);
+            let outline = OutlineStrokeToFill::new(&path, style.clone()).into_outline();
             self.push_path(PathObject::new(outline, paint, String::new()));
         }
         if let Some(fill) = fill {
-            let paint = self.push_paint(&fill);
+            let paint = self.push_paint(fill);
             self.push_path(PathObject::new(path, paint, String::new()));
         }
     }
