@@ -7,7 +7,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-raqote = "*"
+raqote = { version = "*", default-features = false }
 pathfinder_content = { git = "https://github.com/s3bk/pathfinder/" }
 pathfinder_renderer = { git = "https://github.com/s3bk/pathfinder/" }
 pathfinder_geometry = { git = "https://github.com/s3bk/pathfinder/" }
