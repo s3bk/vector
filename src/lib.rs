@@ -5,8 +5,11 @@ use std::ops::{Add, Sub, Mul, Div};
 pub trait Value: Into<f32> + From<f32> + From<i16> + Copy + Sized + Add + Sub + Mul + Div {}
 impl Value for f32 {}
 
-pub use pathfinder_geometry::vector::Vector2F as Vector;
-pub use pathfinder_geometry::transform2d::Transform2F as Transform;
+pub use pathfinder_geometry::{
+    vector::Vector2F as Vector,
+    transform2d::Transform2F as Transform,
+    rect::RectF as Rect
+};
 
 pub trait Contour: Clone + Sized {
     fn new(start: Vector) -> Self;
