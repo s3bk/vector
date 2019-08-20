@@ -67,20 +67,19 @@ impl<O: Outline> PathBuilder<O> {
     }   
 }
 
+pub type Rgba8 = (u8, u8, u8, u8);
+pub struct PathStyle {
+    pub fill: Option<Rgba8>,
+    pub stroke: Option<(Rgba8, f32)>
+}
+
 pub trait Surface {
     type Outline: Outline;
-    type Color;
-    type StrokeStyle;
+    type Style;
     
     fn new(size: Vector) -> Self;
-    
-    fn color_rgb(&mut self, r: u8, g: u8, b: u8) -> Self::Color {
-        self.color_rgba(r, g, b, 255)
-    }
-    fn color_rgba(&mut self, r: u8, g: u8, b: u8, a: u8) -> Self::Color;
-    fn stroke(&mut self, width: f32) -> Self::StrokeStyle;
-    
-    fn draw_path(&mut self, path: Self::Outline, fill: Option<&Self::Color>, stroke: Option<(&Self::Color, &Self::StrokeStyle)>);
+    fn build_style(&mut self, style: PathStyle) -> Self::Style;
+    fn draw_path(&mut self, path: Self::Outline, style: &Self::Style);
 }
 
 mod impl_raqote;

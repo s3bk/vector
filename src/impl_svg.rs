@@ -1,5 +1,5 @@
 use std::fmt::{Write};
-use crate::{Surface, Vector};
+use crate::{Surface, Vector, Rgba8, PathStyle};
 use itertools::Itertools;
 use pathfinder_content::outline::{Outline as PaOutline};
 
@@ -13,33 +13,26 @@ impl Svg {
 
 impl Surface for Svg {
     type Outline = PaOutline;
-    type Color = (u8, u8, u8, u8);
-    type StrokeStyle = f32;
+    type Style = PathStyle;
     
     fn new(size: Vector) -> Self {
         let mut w = String::with_capacity(1024);
         writeln!(w, "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 {} {}\">", size.x(), size.y()).unwrap();
         Svg(w)
     }
-    fn color_rgba(&mut self, r: u8, g: u8, b: u8, a: u8) -> (u8, u8, u8, u8) {
-        (r, g, b, a)
+    fn build_style(&mut self, style: PathStyle) -> Self::Style {
+        style
     }
-    fn stroke(&mut self, width: f32) -> Self::StrokeStyle {
-        width
-    }
-    
-    fn draw_path(&mut self, path: Self::Outline, fill: Option<&Self::Color>, stroke: Option<(&Self::Color, &Self::StrokeStyle)>) {
-        (|| {
-            write!(self.0, "<path")?;
-            
-            fn f(u: u8) -> f32 { u as f32 / 255. }
-            if let Some(&(r, g, b, a)) = fill {
-                write!(self.0, " fill=\"rgba({}, {}, {}, {})\"", r, g, b, f(a))?;
-            }
-            if let Some((&(r, g, b, a), &width)) = stroke {
-                write!(self.0, " stroke=\"rgba({}, {}, {}, {})\" stroke-width=\"{}\"", r, g, b, f(a), width)?;
-            }
-            writeln!(self.0, " d=\"{:?}\" />", path.contours().iter().format(" "))
-        })().unwrap()
+    fn draw_path(&mut self, path: Self::Outline, style: &Self::Style) {
+        write!(self.0, "<path style=\"").unwrap();
+        
+        fn f(u: u8) -> f32 { u as f32 / 255. }
+        if let Some((r, g, b, a)) = style.fill {
+            write!(self.0, "fill: rgba({}, {}, {}, {}); ", r, g, b, f(a)).unwrap();
+        }
+        if let Some(((r, g, b, a), width)) = style.stroke {
+            write!(self.0, "stroke: #{:02x}{:02x}{:02x}; stroke-width: {}; stroke-opacity: {}", r, g, b, width, f(a)).unwrap();
+        }
+        writeln!(self.0, "\" d=\"{:?}\" />", path.contours().iter().format(" ")).unwrap()
     }
 }

@@ -5,10 +5,10 @@ use pathfinder_content::{
 };
 use pathfinder_renderer::{
     scene::{Scene, PathObject},
-    paint::Paint
+    paint::{Paint, PaintId}
 };
 pub use pathfinder_geometry::rect::RectF;
-use crate::{Contour, Vector, Surface, Outline, Transform};
+use crate::{Contour, Vector, Surface, Outline, Transform, Rgba8, PathStyle};
 
 
 impl Contour for PaContour {
@@ -51,34 +51,42 @@ impl Outline for PaOutline {
     }
 }
 
+pub struct Style {
+    fill: Option<PaintId>,
+    stroke: Option<(PaintId, StrokeStyle)>
+}
+fn paint((r, g, b, a): Rgba8) -> Paint {
+    Paint { color: ColorU { r, g, b, a } }
+}
+
 impl Surface for Scene {
     type Outline = PaOutline;
-    type Color = Paint;
-    type StrokeStyle = StrokeStyle;
+    type Style = Style;
     
     fn new(size: Vector) -> Self {
         let mut scene = Scene::new();
         scene.set_view_box(RectF::new(Vector::default(), size));
         scene
     }
-    fn color_rgba(&mut self, r: u8, g: u8, b: u8, a: u8) -> Self::Color {
-        Paint { color: ColorU { r, g, b, a } }
-    }
-    fn stroke(&mut self, width: f32) -> Self::StrokeStyle {
-        StrokeStyle {
-            line_width: width,
-            line_cap: LineCap::Butt,
-            line_join: LineJoin::Miter(width),
+    fn build_style(&mut self, style: PathStyle) -> Self::Style {
+        Style {
+            fill: style.fill.map(|color| self.push_paint(&paint(color))),
+            stroke: style.stroke.map(|(color, width)| (
+                self.push_paint(&paint(color)),
+                StrokeStyle {
+                    line_width: width,
+                    line_cap: LineCap::Butt,
+                    line_join: LineJoin::Miter(width),
+                }
+            ))
         }
     }
-    fn draw_path(&mut self, path: Self::Outline, fill: Option<&Self::Color>, stroke: Option<(&Self::Color, &Self::StrokeStyle)>) {
-        if let Some((stroke, style)) = stroke {
-            let paint = self.push_paint(stroke);
+    fn draw_path(&mut self, path: Self::Outline, style: &Self::Style) {
+        if let Some((paint, style)) = style.stroke {
             let outline = OutlineStrokeToFill::new(&path, style.clone()).into_outline();
             self.push_path(PathObject::new(outline, paint, String::new()));
         }
-        if let Some(fill) = fill {
-            let paint = self.push_paint(fill);
+        if let Some(paint) = style.fill {
             self.push_path(PathObject::new(path, paint, String::new()));
         }
     }

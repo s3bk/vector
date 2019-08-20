@@ -1,4 +1,4 @@
-use crate::{Contour, Outline, Surface, Vector, Transform};
+use crate::{Contour, Outline, Surface, Vector, Transform, Rgba8, PathStyle};
 use raqote::{Point, Path, Winding, PathOp, DrawTarget, Source, SolidSource, StrokeStyle, DrawOptions};
 
 fn point(v: Vector) -> Point {
@@ -60,29 +60,39 @@ impl Outline for Path {
     }
 }
 
+pub struct Style {
+    fill: Option<Source<'static>>,
+    stroke: Option<(Source<'static>, StrokeStyle)>
+}
+
+fn solid((r, g, b, a): Rgba8) -> Source<'static> {
+    Source::Solid(SolidSource { r, g, b, a })
+}
 impl Surface for DrawTarget {
     type Outline = Path;
-    type Color = Source<'static>;
-    type StrokeStyle = StrokeStyle;
+    type Style = Style;
     
     fn new(size: Vector) -> Self {
         DrawTarget::new(size.x().ceil() as i32, size.y().ceil() as i32)
     }
-    fn color_rgba(&mut self, r: u8, g: u8, b: u8, a: u8) -> Source<'static> {
-        Source::Solid(SolidSource { r, g, b, a })
-    }
-    fn stroke(&mut self, width: f32) -> StrokeStyle {
-        StrokeStyle {
-            width,
-            .. StrokeStyle::default()
+    fn build_style(&mut self, style: PathStyle) -> Self::Style {
+        Style {
+            fill: style.fill.map(|color| solid(color)),
+            stroke: style.stroke.map(|(color, width)| (
+                solid(color),
+                StrokeStyle {
+                    width: width,
+                    .. StrokeStyle::default()
+                }
+            ))
         }
     }
     
-    fn draw_path(&mut self, path: Path, fill: Option<&Source>, stroke: Option<(&Source, &StrokeStyle)>) {
-        if let Some(fill) = fill {
+    fn draw_path(&mut self, path: Path, style: &Style) {
+        if let Some(ref fill) = style.fill {
             self.fill(&path, fill, &DrawOptions::new());
         }
-        if let Some((stroke, style)) = stroke {
+        if let Some((ref stroke, ref style)) = style.stroke {
             self.stroke(&path, stroke, style, &DrawOptions::new());
         }
     }
