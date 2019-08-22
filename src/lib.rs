@@ -33,32 +33,39 @@ pub struct PathBuilder<O: Outline> {
     contour: Option<O::Contour>
 }
 impl<O: Outline> PathBuilder<O> {
+    #[inline]
     pub fn new() -> Self {
         PathBuilder {
             outline: O::empty(),
             contour: None
         }
     }
+    #[inline]
     pub fn move_to(&mut self, p: Vector) {
         if let Some(contour) = self.contour.replace(O::Contour::new(p)) {
             self.outline.add_contour(contour);
         }
     }
+    #[inline]
     pub fn line_to(&mut self, p: Vector) {
         self.contour.as_mut().expect("no current contour").line_to(p);
     }
+    #[inline]
     pub fn quadratic_curve_to(&mut self, c: Vector, p: Vector) {
         self.contour.as_mut().expect("no current contour").quadratic_curve_to(c, p);
     }
+    #[inline]
     pub fn cubic_curve_to(&mut self, c1: Vector, c2: Vector, p: Vector) {
         self.contour.as_mut().expect("no current contour").cubic_curve_to(c1, c2, p);
     }
+    #[inline]
     pub fn close(&mut self) {
         if let Some(mut contour) = self.contour.take() {
             contour.close();
             self.outline.add_contour(contour);
         }
     }
+    #[inline]
     pub fn into_outline(mut self) -> O {
         if let Some(contour) = self.contour.take() {
             self.outline.add_contour(contour);

@@ -12,20 +12,25 @@ use crate::{Contour, Vector, Surface, Outline, Transform, Rgba8, PathStyle};
 
 
 impl Contour for PaContour {
+    #[inline]
     fn new(start: Vector) -> Self {
         let mut contour = PaContour::new();
         contour.push_endpoint(start);
         contour
     }
+    #[inline]
     fn line_to(&mut self, p: Vector) {
         self.push_endpoint(p);
     }
+    #[inline]
     fn quadratic_curve_to(&mut self, c: Vector, p: Vector) {
         self.push_quadratic(c, p);
     }
+    #[inline]
     fn cubic_curve_to(&mut self, c0: Vector, c1: Vector, p: Vector) {
         self.push_cubic(c0, c1, p);
     }
+    #[inline]
     fn close(&mut self) {
         PaContour::close(self)
     }
@@ -34,17 +39,21 @@ impl Contour for PaContour {
 impl Outline for PaOutline {
     type Contour = PaContour;
     
+    #[inline]
     fn empty() -> Self {
         PaOutline::new()
     }
+    #[inline]
     fn add_contour(&mut self, contour: Self::Contour) {
         self.push_contour(contour);
     }
+    #[inline]
     fn add_outline(&mut self, outline: Self) {
         for contour in outline.contours() {
             self.push_contour(contour.clone());
         }
     }
+    #[inline]
     fn transform(mut self, transform: Transform) -> Self {
         PaOutline::transform(&mut self, &transform);
         self
@@ -63,6 +72,7 @@ impl Surface for Scene {
     type Outline = PaOutline;
     type Style = Style;
     
+    #[inline]
     fn new(size: Vector) -> Self {
         let mut scene = Scene::new();
         scene.set_view_box(RectF::new(Vector::default(), size));
