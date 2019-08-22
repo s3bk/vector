@@ -13,10 +13,12 @@ use crate::{Contour, Vector, Surface, Outline, Transform, Rgba8, PathStyle};
 
 impl Contour for PaContour {
     #[inline]
-    fn new(start: Vector) -> Self {
-        let mut contour = PaContour::new();
-        contour.push_endpoint(start);
-        contour
+    fn new() -> Self {
+        PaContour::new()
+    }
+    #[inline]
+    fn move_to(&mut self, p: Vector) {
+        self.push_endpoint(p);
     }
     #[inline]
     fn line_to(&mut self, p: Vector) {
@@ -33,6 +35,14 @@ impl Contour for PaContour {
     #[inline]
     fn close(&mut self) {
         PaContour::close(self)
+    }
+    #[inline]
+    fn is_empty(&self) -> bool {
+        PaContour::is_empty(self)
+    }
+    #[inline]
+    fn clear(&mut self) {
+        PaContour::clear(self)
     }
 }
 
@@ -57,6 +67,10 @@ impl Outline for PaOutline {
     fn transform(mut self, transform: Transform) -> Self {
         PaOutline::transform(&mut self, &transform);
         self
+    }
+    #[inline]
+    fn clear(&mut self) {
+        PaOutline::clear(self)
     }
 }
 

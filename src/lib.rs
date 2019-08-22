@@ -12,11 +12,14 @@ pub use pathfinder_geometry::{
 };
 
 pub trait Contour: Clone + Sized {
-    fn new(start: Vector) -> Self;
+    fn new() -> Self;
+    fn move_to(&mut self, p: Vector);
     fn line_to(&mut self, p: Vector);
     fn quadratic_curve_to(&mut self, c: Vector, p: Vector);
     fn cubic_curve_to(&mut self, c0: Vector, c1: Vector, p: Vector);
     fn close(&mut self);
+    fn is_empty(&self) -> bool;
+    fn clear(&mut self);
 }
 
 pub trait Outline: Clone + Sized {
@@ -26,52 +29,65 @@ pub trait Outline: Clone + Sized {
     fn add_contour(&mut self, contour: Self::Contour);
     fn add_outline(&mut self, outline: Self);
     fn transform(self, transform: Transform) -> Self;
+    fn clear(&mut self);
 }
 
 pub struct PathBuilder<O: Outline> {
     outline: O,
-    contour: Option<O::Contour>
+    contour: O::Contour
 }
 impl<O: Outline> PathBuilder<O> {
     #[inline]
     pub fn new() -> Self {
         PathBuilder {
             outline: O::empty(),
-            contour: None
+            contour: O::Contour::new()
         }
     }
     #[inline]
     pub fn move_to(&mut self, p: Vector) {
-        if let Some(contour) = self.contour.replace(O::Contour::new(p)) {
-            self.outline.add_contour(contour);
+        // copy the contour instead of allocating a new buffer with unknown size each time
+        // that way we reuse one buffer for each contour (of unknown length) and only need one allocation per contour
+        // (instead of growing and reallocating every contour a bunch of times)
+        if !self.contour.is_empty() {
+            self.outline.add_contour(self.contour.clone());
+            self.contour.clear();
         }
     }
     #[inline]
     pub fn line_to(&mut self, p: Vector) {
-        self.contour.as_mut().expect("no current contour").line_to(p);
+        self.contour.line_to(p);
     }
     #[inline]
     pub fn quadratic_curve_to(&mut self, c: Vector, p: Vector) {
-        self.contour.as_mut().expect("no current contour").quadratic_curve_to(c, p);
+        self.contour.quadratic_curve_to(c, p);
     }
     #[inline]
     pub fn cubic_curve_to(&mut self, c1: Vector, c2: Vector, p: Vector) {
-        self.contour.as_mut().expect("no current contour").cubic_curve_to(c1, c2, p);
+        self.contour.cubic_curve_to(c1, c2, p);
     }
     #[inline]
     pub fn close(&mut self) {
-        if let Some(mut contour) = self.contour.take() {
-            contour.close();
-            self.outline.add_contour(contour);
-        }
+        self.contour.close();
     }
     #[inline]
     pub fn into_outline(mut self) -> O {
-        if let Some(contour) = self.contour.take() {
-            self.outline.add_contour(contour);
+        if !self.contour.is_empty() {
+            self.outline.add_contour(self.contour);
         }
         self.outline
-    }   
+    }
+    #[inline]
+    pub fn take(&mut self) -> O {
+        if !self.contour.is_empty() {
+            self.outline.add_contour(self.contour.clone());
+            self.contour.clear();
+        }
+        
+        let outline = self.outline.clone();
+        self.outline.clear();
+        outline
+    }
 }
 
 pub type Rgba8 = (u8, u8, u8, u8);

@@ -6,11 +6,14 @@ fn point(v: Vector) -> Point {
 }
 
 impl Contour for Path {
-    fn new(start: Vector) -> Self {
+    fn new() -> Self {
         Path {
-            ops: vec![PathOp::MoveTo(point(start))],
+            ops: vec![],
             winding: Winding::EvenOdd
         }
+    }
+    fn move_to(&mut self, p: Vector) {
+        self.ops.push(PathOp::MoveTo(point(p)));
     }
     fn line_to(&mut self, p: Vector) {
         self.ops.push(PathOp::LineTo(point(p)));
@@ -26,6 +29,12 @@ impl Contour for Path {
             Some(&PathOp::Close) | None => {},
             _ => self.ops.push(PathOp::Close)
         }
+    }
+    fn is_empty(&self) -> bool {
+        self.ops.is_empty()
+    }
+    fn clear(&mut self) {
+        self.ops.clear();
     }
 }
 
@@ -57,6 +66,9 @@ impl Outline for Path {
             }
         }
         self
+    }
+    fn clear(&mut self) {
+        self.ops.clear();
     }
 }
 
