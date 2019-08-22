@@ -88,6 +88,11 @@ impl<O: Outline> PathBuilder<O> {
         self.outline.clear();
         outline
     }
+    #[inline]
+    pub fn clear(&mut self) {
+        self.contour.clear();
+        self.outline.clear();
+    }
 }
 
 pub type Rgba8 = (u8, u8, u8, u8);
