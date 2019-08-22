@@ -97,6 +97,7 @@ impl<O: Outline> PathBuilder<O> {
 }
 
 pub type Rgba8 = (u8, u8, u8, u8);
+#[derive(Copy, Clone)]
 pub struct PathStyle {
     pub fill: Option<Rgba8>,
     pub stroke: Option<(Rgba8, f32)>
