@@ -53,6 +53,7 @@ impl<O: Outline> PathBuilder<O> {
             self.outline.add_contour(self.contour.clone());
             self.contour.clear();
         }
+        self.contour.move_to(p);
     }
     #[inline]
     pub fn line_to(&mut self, p: Vector) {
