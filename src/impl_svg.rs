@@ -29,6 +29,8 @@ impl Surface for Svg {
         fn f(u: u8) -> f32 { u as f32 / 255. }
         if let Some((r, g, b, a)) = style.fill {
             write!(self.0, "fill: rgba({}, {}, {}, {}); ", r, g, b, f(a)).unwrap();
+        } else {
+            write!(self.0, "fill: none; ");
         }
         if let Some(((r, g, b, a), width)) = style.stroke {
             write!(self.0, "stroke: #{:02x}{:02x}{:02x}; stroke-width: {}; stroke-opacity: {}", r, g, b, width, f(a)).unwrap();
