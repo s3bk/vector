@@ -1,3 +1,4 @@
+#[macro_use] extern crate log;
 extern crate raqote;
 
 use std::ops::{Add, Sub, Mul, Div};
@@ -68,6 +69,14 @@ impl<O: Outline> PathBuilder<O> {
         self.contour.cubic_curve_to(c1, c2, p);
     }
     #[inline]
+    pub fn rect(&mut self, rect: Rect) {
+        self.move_to(rect.origin());
+        self.line_to(rect.upper_right());
+        self.line_to(rect.lower_right());
+        self.line_to(rect.lower_left());
+        self.close();
+    }
+    #[inline]
     pub fn close(&mut self) {
         self.contour.close();
     }
@@ -97,7 +106,7 @@ impl<O: Outline> PathBuilder<O> {
 }
 
 pub type Rgba8 = (u8, u8, u8, u8);
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct PathStyle {
     pub fill: Option<Rgba8>,
     pub stroke: Option<(Rgba8, f32)>

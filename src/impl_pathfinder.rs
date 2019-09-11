@@ -14,26 +14,32 @@ use crate::{Contour, Vector, Surface, Outline, Transform, Rgba8, PathStyle};
 impl Contour for PaContour {
     #[inline]
     fn new() -> Self {
+        trace!("Contour::new()");
         PaContour::new()
     }
     #[inline]
     fn move_to(&mut self, p: Vector) {
+        trace!("Contour::move_to({:?})", p);
         self.push_endpoint(p);
     }
     #[inline]
     fn line_to(&mut self, p: Vector) {
+        trace!("Contour::line_to({:?})", p);
         self.push_endpoint(p);
     }
     #[inline]
     fn quadratic_curve_to(&mut self, c: Vector, p: Vector) {
+        trace!("Contour::quadratic_curve_to({:?}, {:?})", c, p);
         self.push_quadratic(c, p);
     }
     #[inline]
-    fn cubic_curve_to(&mut self, c0: Vector, c1: Vector, p: Vector) {
-        self.push_cubic(c0, c1, p);
+    fn cubic_curve_to(&mut self, c1: Vector, c2: Vector, p: Vector) {
+        trace!("Contour::cubic_curve_to({:?}, {:?}, {:?})", c1, c2, p);
+        self.push_cubic(c1, c2, p);
     }
     #[inline]
     fn close(&mut self) {
+        trace!("Contour::close()");
         PaContour::close(self)
     }
     #[inline]

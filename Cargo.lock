@@ -645,6 +645,7 @@ name = "vector"
 version = "0.1.0"
 dependencies = [
  "itertools 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "pathfinder_content 0.1.0 (git+https://github.com/s3bk/pathfinder/)",
  "pathfinder_geometry 0.3.0 (git+https://github.com/s3bk/pathfinder/)",
  "pathfinder_renderer 0.1.0 (git+https://github.com/s3bk/pathfinder/)",
