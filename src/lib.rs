@@ -33,6 +33,7 @@ pub trait Outline: Clone + Sized {
     fn clear(&mut self);
 }
 
+#[derive(Clone)]
 pub struct PathBuilder<O: Outline> {
     outline: O,
     contour: O::Contour
