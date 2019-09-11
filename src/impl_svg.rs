@@ -28,7 +28,7 @@ impl Surface for Svg {
         
         fn f(u: u8) -> f32 { u as f32 / 255. }
         if let Some((r, g, b, a)) = style.fill {
-            write!(self.0, "fill: {:02x}{:02x}{:02x}; ", r, g, b).unwrap();
+            write!(self.0, "fill: #{:02x}{:02x}{:02x}; ", r, g, b).unwrap();
             if a != 255 {
                 write!(self.0, "fill-opacity: {}", f(a)).unwrap();
             }
