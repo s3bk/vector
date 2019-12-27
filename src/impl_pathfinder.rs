@@ -112,8 +112,10 @@ impl Surface for Scene {
         }
     }
     fn draw_path(&mut self, path: Self::Outline, style: &Self::Style) {
-        if let Some((paint, style)) = style.stroke {
-            let outline = OutlineStrokeToFill::new(&path, style.clone()).into_outline();
+        if let Some((paint, stroke_style)) = style.stroke {
+            let mut stroke_to_fill = OutlineStrokeToFill::new(&path, stroke_style);
+            stroke_to_fill.offset();
+            let outline = stroke_to_fill.into_outline();
             self.push_path(PathObject::new(outline, paint, String::new()));
         }
         if let Some(paint) = style.fill {
