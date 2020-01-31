@@ -11,5 +11,6 @@ raqote = { version = "*", default-features = false }
 pathfinder_content = { git = "https://github.com/s3bk/pathfinder/" }
 pathfinder_renderer = { git = "https://github.com/s3bk/pathfinder/" }
 pathfinder_geometry = { git = "https://github.com/s3bk/pathfinder/" }
+pathfinder_color = { git = "https://github.com/s3bk/pathfinder/" }
 itertools = "*"
 log = "*"

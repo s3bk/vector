@@ -1,8 +1,8 @@
 use pathfinder_content::{
     outline::{Contour as PaContour, Outline as PaOutline},
-    stroke::{StrokeStyle, LineCap, LineJoin, OutlineStrokeToFill},
-    color::ColorU
+    stroke::{StrokeStyle, LineCap, LineJoin, OutlineStrokeToFill}
 };
+use pathfinder_color::ColorU;
 use pathfinder_renderer::{
     scene::{Scene, PathObject},
     paint::{Paint, PaintId}
