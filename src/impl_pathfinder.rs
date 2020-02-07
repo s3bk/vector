@@ -85,7 +85,7 @@ pub struct Style {
     stroke: Option<(PaintId, StrokeStyle)>
 }
 fn paint((r, g, b, a): Rgba8) -> Paint {
-    Paint { color: ColorU { r, g, b, a } }
+    Paint::Color(ColorU { r, g, b, a })
 }
 
 impl Surface for Scene {
