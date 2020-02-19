@@ -1,14 +1,15 @@
 use pathfinder_content::{
     outline::{Contour as PaContour, Outline as PaOutline},
-    stroke::{StrokeStyle, LineCap, LineJoin, OutlineStrokeToFill}
+    stroke::{StrokeStyle, LineCap, LineJoin, OutlineStrokeToFill},
+    fill::FillRule as PaFillRule
 };
 use pathfinder_color::ColorU;
 use pathfinder_renderer::{
-    scene::{Scene, PathObject},
+    scene::{Scene, DrawPath},
     paint::{Paint, PaintId}
 };
 pub use pathfinder_geometry::rect::RectF;
-use crate::{Contour, Vector, Surface, Outline, Transform, Rgba8, PathStyle};
+use crate::{Contour, Vector, Surface, Outline, Transform, Rgba8, PathStyle, FillRule};
 
 
 impl Contour for PaContour {
@@ -83,7 +84,8 @@ impl Outline for PaOutline {
 #[derive(Clone)]
 pub struct Style {
     fill: Option<PaintId>,
-    stroke: Option<(PaintId, StrokeStyle)>
+    stroke: Option<(PaintId, StrokeStyle)>,
+    fill_rule: PaFillRule,
 }
 fn paint((r, g, b, a): Rgba8) -> Paint {
     Paint::Color(ColorU { r, g, b, a })
@@ -109,7 +111,11 @@ impl Surface for Scene {
                     line_cap: LineCap::Butt,
                     line_join: LineJoin::Miter(width),
                 }
-            ))
+            )),
+            fill_rule: match style.fill_rule {
+                FillRule::EvenOdd => PaFillRule::EvenOdd,
+                FillRule::NonZero => PaFillRule::Winding
+            }
         }
     }
     fn draw_path(&mut self, path: Self::Outline, style: &Self::Style) {
@@ -117,10 +123,10 @@ impl Surface for Scene {
             let mut stroke_to_fill = OutlineStrokeToFill::new(&path, stroke_style);
             stroke_to_fill.offset();
             let outline = stroke_to_fill.into_outline();
-            self.push_path(PathObject::new(outline, paint, String::new()));
+            self.push_path(DrawPath::new(outline, paint, None, style.fill_rule, String::new()));
         }
         if let Some(paint) = style.fill {
-            self.push_path(PathObject::new(path, paint, String::new()));
+            self.push_path(DrawPath::new(path, paint, None, style.fill_rule, String::new()));
         }
     }
 }

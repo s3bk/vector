@@ -1,5 +1,4 @@
 #[macro_use] extern crate log;
-extern crate raqote;
 
 use std::ops::{Add, Sub, Mul, Div};
 
@@ -106,11 +105,17 @@ impl<O: Outline> PathBuilder<O> {
     }
 }
 
+#[derive(Copy, Clone, Debug)]
+pub enum FillRule {
+    EvenOdd,
+    NonZero
+}
 pub type Rgba8 = (u8, u8, u8, u8);
 #[derive(Copy, Clone, Debug)]
 pub struct PathStyle {
     pub fill: Option<Rgba8>,
-    pub stroke: Option<(Rgba8, f32)>
+    pub stroke: Option<(Rgba8, f32)>,
+    pub fill_rule: FillRule
 }
 
 pub trait Surface {
@@ -122,8 +127,14 @@ pub trait Surface {
     fn draw_path(&mut self, path: Self::Outline, style: &Self::Style);
 }
 
+#[cfg(feature = "impl_raquote")]
 mod impl_raqote;
+
+#[cfg(feature = "impl_svg")]
 mod impl_svg;
+
+#[cfg(feature = "impl_pathfinder")]
 mod impl_pathfinder;
 
+#[cfg(feature = "impl_svg")]
 pub use impl_svg::Svg;

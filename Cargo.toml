@@ -4,13 +4,20 @@ version = "0.1.0"
 authors = ["Sebastian Köln <sebk@rynx.org>"]
 edition = "2018"
 
+features = ["impl_svg", "impl_pathfinder", "impl_raqote"]
+
+[features]
+impl_svg = ["impl_pathfinder"]
+impl_pathfinder = ["pathfinder_content", "pathfinder_renderer", "pathfinder_color"]
+impl_raqote = ["raqote"]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-raqote = { version = "*", default-features = false }
-pathfinder_content = { git = "https://github.com/s3bk/pathfinder/" }
-pathfinder_renderer = { git = "https://github.com/s3bk/pathfinder/" }
+raqote = { version = "*", default-features = false, optional = true }
+pathfinder_content = { git = "https://github.com/s3bk/pathfinder/", optional = true }
+pathfinder_renderer = { git = "https://github.com/s3bk/pathfinder/", optional = true }
 pathfinder_geometry = { git = "https://github.com/s3bk/pathfinder/" }
-pathfinder_color = { git = "https://github.com/s3bk/pathfinder/" }
+pathfinder_color = { git = "https://github.com/s3bk/pathfinder/", optional = true }
 itertools = "*"
 log = "*"
