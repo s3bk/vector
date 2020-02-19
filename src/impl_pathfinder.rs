@@ -80,6 +80,7 @@ impl Outline for PaOutline {
     }
 }
 
+#[derive(Clone)]
 pub struct Style {
     fill: Option<PaintId>,
     stroke: Option<(PaintId, StrokeStyle)>

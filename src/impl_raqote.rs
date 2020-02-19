@@ -72,6 +72,7 @@ impl Outline for Path {
     }
 }
 
+#[derive(Clone)]
 pub struct Style {
     fill: Option<Source<'static>>,
     stroke: Option<(Source<'static>, StrokeStyle)>

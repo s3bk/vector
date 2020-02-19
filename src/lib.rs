@@ -115,7 +115,7 @@ pub struct PathStyle {
 
 pub trait Surface {
     type Outline: Outline;
-    type Style;
+    type Style: Clone;
     
     fn new(size: Vector) -> Self;
     fn build_style(&mut self, style: PathStyle) -> Self::Style;
