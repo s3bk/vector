@@ -1,7 +1,8 @@
 use pathfinder_content::{
     outline::{Contour as PaContour, Outline as PaOutline},
     stroke::{StrokeStyle, LineCap, LineJoin, OutlineStrokeToFill},
-    fill::FillRule as PaFillRule
+    fill::FillRule as PaFillRule,
+    effects::BlendMode
 };
 use pathfinder_color::ColorU;
 use pathfinder_renderer::{
@@ -123,10 +124,24 @@ impl Surface for Scene {
             let mut stroke_to_fill = OutlineStrokeToFill::new(&path, stroke_style);
             stroke_to_fill.offset();
             let outline = stroke_to_fill.into_outline();
-            self.push_path(DrawPath::new(outline, paint, None, style.fill_rule, String::new()));
+            self.push_path(DrawPath::new(
+                outline,
+                paint,
+                None, // clip path
+                style.fill_rule,
+                BlendMode::default(),
+                String::new()
+            ));
         }
         if let Some(paint) = style.fill {
-            self.push_path(DrawPath::new(path, paint, None, style.fill_rule, String::new()));
+            self.push_path(DrawPath::new(
+                path,
+                paint,
+                None,
+                style.fill_rule,
+                BlendMode::default(),
+                String::new()
+            ));
         }
     }
 }
