@@ -28,6 +28,7 @@ pub trait Outline: Clone + Sized {
     fn empty() -> Self;
     fn add_contour(&mut self, contour: Self::Contour);
     fn add_outline(&mut self, outline: Self);
+    fn bounding_box(&self) -> Option<Rect>;
     fn transform(self, transform: Transform) -> Self;
     fn clear(&mut self);
 }

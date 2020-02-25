@@ -47,6 +47,9 @@ impl Outline for Path {
             winding: Winding::EvenOdd
         }
     }
+    fn bounding_box(&self) -> Option<Rect> {
+        None // FIXME
+    }
     fn add_contour(&mut self, contour: Self::Contour) {
         self.ops.extend_from_slice(&contour.ops);
     }

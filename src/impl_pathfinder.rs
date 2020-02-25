@@ -62,6 +62,14 @@ impl Outline for PaOutline {
         PaOutline::new()
     }
     #[inline]
+    fn bounding_box(&self) -> Option<RectF> {
+        if self.len() > 0 {
+            Some(self.bounds())
+        } else {
+            None
+        }
+    }
+    #[inline]
     fn add_contour(&mut self, contour: Self::Contour) {
         self.push_contour(contour);
     }
