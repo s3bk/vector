@@ -87,6 +87,7 @@ fn solid((r, g, b, a): Rgba8) -> Source<'static> {
 impl Surface for DrawTarget {
     type Outline = Path;
     type Style = Style;
+    type ClipPath = Path;
     
     fn new(size: Vector) -> Self {
         DrawTarget::new(size.x().ceil() as i32, size.y().ceil() as i32)
@@ -104,13 +105,23 @@ impl Surface for DrawTarget {
         }
     }
     
-    fn draw_path(&mut self, path: Path, style: &Style) {
+    fn draw_path(&mut self, path: Path, style: &Style, clip: Option<&Self::ClipPath>) {
+        if let Some(path) = clip {
+            self.push_clip(path);
+        }
         if let Some(ref fill) = style.fill {
             self.fill(&path, fill, &DrawOptions::new());
         }
         if let Some((ref stroke, ref style)) = style.stroke {
             self.stroke(&path, stroke, style, &DrawOptions::new());
         }
+        if clip.is_some() {
+            self.pop_clip();
+        }
+    }
+
+    fn clip_path(&mut self, path: Self::Outline, fill_rule: FillRule) -> Self::ClipPath {
+        path
     }
 }
 

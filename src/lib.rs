@@ -122,10 +122,12 @@ pub struct PathStyle {
 pub trait Surface {
     type Outline: Outline;
     type Style: Clone;
+    type ClipPath: Clone;
     
     fn new(size: Vector) -> Self;
     fn build_style(&mut self, style: PathStyle) -> Self::Style;
-    fn draw_path(&mut self, path: Self::Outline, style: &Self::Style);
+    fn draw_path(&mut self, path: Self::Outline, style: &Self::Style, clip: Option<&Self::ClipPath>);
+    fn clip_path(&mut self, path: Self::Outline, fill_rule: FillRule) -> Self::ClipPath;
 }
 
 #[cfg(feature = "impl_raquote")]

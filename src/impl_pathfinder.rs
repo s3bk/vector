@@ -6,7 +6,7 @@ use pathfinder_content::{
 };
 use pathfinder_color::ColorU;
 use pathfinder_renderer::{
-    scene::{Scene, DrawPath},
+    scene::{Scene, DrawPath, ClipPath as PaClipPath, ClipPathId},
     paint::{Paint, PaintId}
 };
 pub use pathfinder_geometry::rect::RectF;
@@ -99,10 +99,18 @@ pub struct Style {
 fn paint((r, g, b, a): Rgba8) -> Paint {
     Paint::Color(ColorU { r, g, b, a })
 }
-
+impl Into<PaFillRule> for FillRule {
+    fn into(self) -> PaFillRule {
+        match self {
+            FillRule::EvenOdd => PaFillRule::EvenOdd,
+            FillRule::NonZero => PaFillRule::Winding
+        }
+    }
+}
 impl Surface for Scene {
     type Outline = PaOutline;
     type Style = Style;
+    type ClipPath = ClipPathId;
     
     #[inline]
     fn new(size: Vector) -> Self {
@@ -121,13 +129,10 @@ impl Surface for Scene {
                     line_join: LineJoin::Miter(width),
                 }
             )),
-            fill_rule: match style.fill_rule {
-                FillRule::EvenOdd => PaFillRule::EvenOdd,
-                FillRule::NonZero => PaFillRule::Winding
-            }
+            fill_rule: style.fill_rule.into()
         }
     }
-    fn draw_path(&mut self, path: Self::Outline, style: &Self::Style) {
+    fn draw_path(&mut self, path: Self::Outline, style: &Self::Style, clip: Option<&Self::ClipPath>) {
         if let Some((paint, stroke_style)) = style.stroke {
             let mut stroke_to_fill = OutlineStrokeToFill::new(&path, stroke_style);
             stroke_to_fill.offset();
@@ -151,5 +156,9 @@ impl Surface for Scene {
                 String::new()
             ));
         }
+    }
+    fn clip_path(&mut self, path: Self::Outline, fill_rule: FillRule) -> Self::ClipPath {
+        let clip_path = PaClipPath::new(path, fill_rule.into(), String::new());
+        self.push_clip_path(clip_path)
     }
 }
