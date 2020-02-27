@@ -33,7 +33,7 @@ pub trait Outline: Clone + Sized {
     fn clear(&mut self);
 }
 
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 enum PathState {
     // nothing has ben drawn yet. only move_to is valid
     Empty,
