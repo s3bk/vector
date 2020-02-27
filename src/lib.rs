@@ -34,40 +34,72 @@ pub trait Outline: Clone + Sized {
 }
 
 #[derive(Clone)]
+enum PathState {
+    // nothing has ben drawn yet. only move_to is valid
+    Empty,
+
+    // we have a starting point, but it is not connected to a previous path
+    Start(Vector),
+
+    // out starting point is the end of the last path
+    End(Vector)
+}
+
+#[derive(Clone)]
 pub struct PathBuilder<O: Outline> {
     outline: O,
-    contour: O::Contour
+    contour: O::Contour,
+    state: PathState,
 }
 impl<O: Outline> PathBuilder<O> {
     #[inline]
     pub fn new() -> Self {
         PathBuilder {
             outline: O::empty(),
-            contour: O::Contour::new()
+            contour: O::Contour::new(),
+            state: PathState::Empty
         }
     }
+
+    #[inline]
+    fn start(&mut self) {
+        match self.state {
+            PathState::Empty => panic!("no starting point set. call move_to first"),
+            PathState::Start(p) => {
+                // copy the contour instead of allocating a new buffer with unknown size each time
+                // that way we reuse one buffer for each contour (of unknown length) and only need one allocation per contour
+                // (instead of growing and reallocating every contour a bunch of times)
+                if !self.contour.is_empty() {
+                    self.outline.add_contour(self.contour.clone());
+                    self.contour.clear();
+                }
+                self.contour.move_to(p);
+            }
+            PathState::End(_) => {}
+        }
+    }
+
     #[inline]
     pub fn move_to(&mut self, p: Vector) {
-        // copy the contour instead of allocating a new buffer with unknown size each time
-        // that way we reuse one buffer for each contour (of unknown length) and only need one allocation per contour
-        // (instead of growing and reallocating every contour a bunch of times)
-        if !self.contour.is_empty() {
-            self.outline.add_contour(self.contour.clone());
-            self.contour.clear();
-        }
-        self.contour.move_to(p);
+        self.state = PathState::Start(p);
     }
     #[inline]
     pub fn line_to(&mut self, p: Vector) {
+        self.start();
         self.contour.line_to(p);
+        self.state = PathState::End(p);
     }
     #[inline]
     pub fn quadratic_curve_to(&mut self, c: Vector, p: Vector) {
+        self.start();
         self.contour.quadratic_curve_to(c, p);
+        self.state = PathState::End(p);
     }
     #[inline]
     pub fn cubic_curve_to(&mut self, c1: Vector, c2: Vector, p: Vector) {
+        self.start();
         self.contour.cubic_curve_to(c1, c2, p);
+        self.state = PathState::End(p);
     }
     #[inline]
     pub fn rect(&mut self, rect: Rect) {
@@ -76,6 +108,7 @@ impl<O: Outline> PathBuilder<O> {
         self.line_to(rect.lower_right());
         self.line_to(rect.lower_left());
         self.close();
+        self.state = PathState::End(rect.lower_left());
     }
     #[inline]
     pub fn close(&mut self) {
@@ -103,6 +136,15 @@ impl<O: Outline> PathBuilder<O> {
     pub fn clear(&mut self) {
         self.contour.clear();
         self.outline.clear();
+    }
+
+    #[inline]
+    pub fn pos(&self) -> Option<Vector> {
+        match self.state {
+            PathState::Empty => None,
+            PathState::Start(p) => Some(p),
+            PathState::End(p) => Some(p)
+        }
     }
 }
 
