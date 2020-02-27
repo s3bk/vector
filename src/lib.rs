@@ -45,7 +45,7 @@ enum PathState {
     End(Vector)
 }
 
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct PathBuilder<O: Outline> {
     outline: O,
     contour: O::Contour,
@@ -130,12 +130,19 @@ impl<O: Outline> PathBuilder<O> {
         
         let outline = self.outline.clone();
         self.outline.clear();
+
+        self.state = match self.state {
+            PathState::End(p) => PathState::Start(p),
+            s => s
+        };
+
         outline
     }
     #[inline]
     pub fn clear(&mut self) {
         self.contour.clear();
         self.outline.clear();
+        self.state = PathState::Empty;
     }
 
     #[inline]
