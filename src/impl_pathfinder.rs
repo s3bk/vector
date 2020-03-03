@@ -4,13 +4,20 @@ use pathfinder_content::{
     fill::FillRule as PaFillRule,
     effects::BlendMode
 };
-use pathfinder_color::ColorU;
 use pathfinder_renderer::{
     scene::{Scene, DrawPath, ClipPath as PaClipPath, ClipPathId},
-    paint::{Paint, PaintId}
+    paint::{Paint as PaPaint, PaintId as PaPaintId},
 };
-pub use pathfinder_geometry::rect::RectF;
-use crate::{Contour, Vector, Surface, Outline, Transform, Rgba8, PathStyle, FillRule};
+use pathfinder_color::ColorU;
+use pathfinder_content::{
+    gradient::{Gradient, GradientGeometry},
+    pattern::{Pattern, Image, PatternSource, PatternFlags}
+};
+use pathfinder_geometry::{
+    rect::RectF,
+    vector::Vector2I
+};
+use crate::{Contour, Vector, Surface, Outline, Transform, Paint, PathStyle, FillRule, PixelFormat};
 
 
 impl Contour for PaContour {
@@ -92,14 +99,22 @@ impl Outline for PaOutline {
 
 #[derive(Clone)]
 pub struct Style {
-    fill: Option<PaintId>,
-    stroke: Option<(PaintId, StrokeStyle)>,
+    fill: Option<PaPaintId>,
+    stroke: Option<(PaPaintId, StrokeStyle)>,
     fill_rule: PaFillRule,
 }
-fn paint((r, g, b, a): Rgba8) -> Paint {
-    Paint::Color(ColorU { r, g, b, a })
+#[inline]
+fn paint(paint: Paint<Scene>) -> PaPaint {
+    match paint {
+        Paint::Solid((r, g, b, a)) => PaPaint::Color(ColorU { r, g, b, a }),
+        Paint::Image(image) => PaPaint::Pattern(Pattern {
+            source: PatternSource::Image(image),
+            flags: PatternFlags::empty(),
+        })
+    }
 }
 impl Into<PaFillRule> for FillRule {
+    #[inline]
     fn into(self) -> PaFillRule {
         match self {
             FillRule::EvenOdd => PaFillRule::EvenOdd,
@@ -111,6 +126,7 @@ impl Surface for Scene {
     type Outline = PaOutline;
     type Style = Style;
     type ClipPath = ClipPathId;
+    type Image = Image;
     
     #[inline]
     fn new(size: Vector) -> Self {
@@ -118,7 +134,7 @@ impl Surface for Scene {
         scene.set_view_box(RectF::new(Vector::default(), size));
         scene
     }
-    fn build_style(&mut self, style: PathStyle) -> Self::Style {
+    fn build_style(&mut self, style: PathStyle<Self>) -> Self::Style {
         Style {
             fill: style.fill.map(|color| self.push_paint(&paint(color))),
             stroke: style.stroke.map(|(color, width)| (
@@ -137,28 +153,30 @@ impl Surface for Scene {
             let mut stroke_to_fill = OutlineStrokeToFill::new(&path, stroke_style);
             stroke_to_fill.offset();
             let outline = stroke_to_fill.into_outline();
-            self.push_path(DrawPath::new(
-                outline,
-                paint,
-                None, // clip path
-                style.fill_rule,
-                BlendMode::default(),
-                String::new()
-            ));
+            let mut draw_path = DrawPath::new(outline, paint);
+            draw_path.set_fill_rule(style.fill_rule);
+            self.push_path(draw_path);
         }
         if let Some(paint) = style.fill {
-            self.push_path(DrawPath::new(
-                path,
-                paint,
-                None,
-                style.fill_rule,
-                BlendMode::default(),
-                String::new()
-            ));
+            let mut draw_path = DrawPath::new(path, paint);
+            draw_path.set_fill_rule(style.fill_rule);
+            self.push_path(draw_path);
         }
     }
+    #[inline]
     fn clip_path(&mut self, path: Self::Outline, fill_rule: FillRule) -> Self::ClipPath {
-        let clip_path = PaClipPath::new(path, fill_rule.into(), String::new());
+        let mut clip_path = PaClipPath::new(path);
+        clip_path.set_fill_rule(fill_rule.into());
         self.push_clip_path(clip_path)
     }
+    fn texture(&mut self, width: u32, height: u32, data: &[u8], format: PixelFormat) -> Self::Image {
+        let data: Vec<ColorU> = match format {
+            PixelFormat::L8 => data.iter().map(|&l| ColorU { r: l, g: l, b: l, a: 255 }).collect(),
+            PixelFormat::Rgb24 => data.chunks(3).map(|c| ColorU { r: c[0], g: c[1], b: c[2], a: 255 }).collect(),
+            PixelFormat::Rgba32 => data.chunks(4).map(|c| ColorU { r: c[0], g: c[1], b: c[2], a: c[3] }).collect(),
+        };
+        assert_eq!(data.len(), width as usize * height as usize);
+        Image::new(Vector2I::new(width as i32, height as i32), data)
+    }
+
 }

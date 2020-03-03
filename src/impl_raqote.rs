@@ -1,4 +1,4 @@
-use crate::{Contour, Outline, Surface, Vector, Transform, Rgba8, PathStyle};
+use crate::{Contour, Outline, Surface, Vector, Transform, Rgba8, PathStyle, PixelFormat};
 use raqote::{Point, Path, Winding, PathOp, DrawTarget, Source, SolidSource, StrokeStyle, DrawOptions};
 
 fn point(v: Vector) -> Point {
@@ -122,6 +122,9 @@ impl Surface for DrawTarget {
 
     fn clip_path(&mut self, path: Self::Outline, fill_rule: FillRule) -> Self::ClipPath {
         path
+    }
+    fn texture(&mut self, width: u32, height: u32, data: &[u8], format: PixelFormat) -> Self::Style {
+        unimplemented!
     }
 }
 

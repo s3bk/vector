@@ -1,6 +1,7 @@
 #[macro_use] extern crate log;
 
 use std::ops::{Add, Sub, Mul, Div};
+use std::fmt;
 
 pub trait Value: Into<f32> + From<f32> + From<i16> + Copy + Sized + Add + Sub + Mul + Div {}
 impl Value for f32 {}
@@ -8,7 +9,7 @@ impl Value for f32 {}
 pub use pathfinder_geometry::{
     vector::Vector2F as Vector,
     transform2d::Transform2F as Transform,
-    rect::RectF as Rect
+    rect::RectF as Rect,
 };
 
 pub trait Contour: Clone + Sized {
@@ -160,23 +161,72 @@ pub enum FillRule {
     EvenOdd,
     NonZero
 }
-pub type Rgba8 = (u8, u8, u8, u8);
-#[derive(Copy, Clone, Debug)]
-pub struct PathStyle {
-    pub fill: Option<Rgba8>,
-    pub stroke: Option<(Rgba8, f32)>,
-    pub fill_rule: FillRule
+
+pub enum Paint<S: Surface> {
+    Solid(Rgba8),
+    Image(S::Image)
+}
+impl<S: Surface> Clone for Paint<S> {
+    #[inline]
+    fn clone(&self) -> Self {
+        match *self {
+            Paint::Solid(color) => Paint::Solid(color),
+            Paint::Image(ref image) => Paint::Image(image.clone())
+        }
+    }
+}
+impl<S: Surface> fmt::Debug for Paint<S> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Paint::Solid((r, g, b, a)) => write!(f, "Solid(rgba({}, {}, {}, {}))", r, g, b, a),
+            Paint::Image(_) => write!(f, "Image")
+        }
+    }
+}
+impl<S: Surface> Paint<S> {
+    #[inline]
+    pub fn white() -> Self {
+        Paint::Solid((255, 255, 255, 255))
+    }
+    #[inline]
+    pub fn black() -> Self {
+        Paint::Solid((0, 0, 0, 255))
+    }
 }
 
-pub trait Surface {
+pub type Rgba8 = (u8, u8, u8, u8);
+#[derive(Debug)]
+pub struct PathStyle<S: Surface> {
+    pub fill: Option<Paint<S>>,
+    pub stroke: Option<(Paint<S>, f32)>,
+    pub fill_rule: FillRule
+}
+impl<S: Surface> Clone for PathStyle<S> {
+    fn clone(&self) -> Self {
+        PathStyle {
+            fill: self.fill.clone(),
+            stroke: self.stroke.clone(),
+            fill_rule: self.fill_rule
+        }
+    }
+}
+
+pub enum PixelFormat {
+    L8,
+    Rgb24,
+    Rgba32
+}
+pub trait Surface: Sized {
     type Outline: Outline;
     type Style: Clone;
     type ClipPath: Clone;
+    type Image: Clone;
     
     fn new(size: Vector) -> Self;
-    fn build_style(&mut self, style: PathStyle) -> Self::Style;
+    fn build_style(&mut self, style: PathStyle<Self>) -> Self::Style;
     fn draw_path(&mut self, path: Self::Outline, style: &Self::Style, clip: Option<&Self::ClipPath>);
     fn clip_path(&mut self, path: Self::Outline, fill_rule: FillRule) -> Self::ClipPath;
+    fn texture(&mut self, width: u32, height: u32, data: &[u8], format: PixelFormat) -> Self::Image;
 }
 
 #[cfg(feature = "impl_raquote")]

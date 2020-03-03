@@ -1,5 +1,5 @@
 use std::fmt::{Write};
-use crate::{Surface, Vector, Rgba8, PathStyle, FillRule};
+use crate::{Surface, Vector, Rgba8, PathStyle, FillRule, PixelFormat, Paint};
 use itertools::Itertools;
 use pathfinder_content::outline::{Outline as PaOutline};
 
@@ -20,34 +20,43 @@ fn fill_rule_str(r: FillRule) -> &'static str {
 
 impl Surface for Svg {
     type Outline = PaOutline;
-    type Style = PathStyle;
+    type Style = PathStyle<Self>;
     type ClipPath = usize;
+    type Image = ();
     
     fn new(size: Vector) -> Self {
         let mut w = String::with_capacity(1024);
         writeln!(w, "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 {} {}\">", size.x(), size.y()).unwrap();
         Svg(w, 0)
     }
-    fn build_style(&mut self, style: PathStyle) -> Self::Style {
+    fn build_style(&mut self, style: PathStyle<Self>) -> Self::Style {
         style
     }
     fn draw_path(&mut self, path: Self::Outline, style: &Self::Style, clip: Option<&Self::ClipPath>) {
         write!(self.0, "<path style=\"").unwrap();
         
         fn f(u: u8) -> f32 { u as f32 / 255. }
-        if let Some((r, g, b, a)) = style.fill {
-            write!(self.0, "fill: #{:02x}{:02x}{:02x}; ", r, g, b).unwrap();
-            if a != 255 {
-                write!(self.0, "fill-opacity: {}", f(a)).unwrap();
+        match style.fill {
+            None | Some(Paint::Solid((_, _, _, 0))) => {
+                write!(self.0, "fill: none; ").unwrap();
             }
-        } else {
-            write!(self.0, "fill: none; ").unwrap();
+            Some(Paint::Solid((r, g, b, a))) => {
+                write!(self.0, "fill: #{:02x}{:02x}{:02x}; ", r, g, b).unwrap();
+                if a != 255 {
+                    write!(self.0, "fill-opacity: {}", f(a)).unwrap();
+                }
+            },
+            _ => unimplemented!()
         }
-        if let Some(((r, g, b, a), width)) = style.stroke {
-            write!(self.0, "stroke: #{:02x}{:02x}{:02x}; stroke-width: {}; ", r, g, b, width).unwrap();
-            if a != 255 {
-                write!(self.0, "stroke-opacity: {}", a as f32 / 255.).unwrap();
+        match style.stroke {
+            Some((Paint::Solid((r, g, b, a)), width)) => {
+                write!(self.0, "stroke: #{:02x}{:02x}{:02x}; stroke-width: {}; ", r, g, b, width).unwrap();
+                if a != 255 {
+                    write!(self.0, "stroke-opacity: {}", a as f32 / 255.).unwrap();
+                }
             }
+            None => {}
+            _ => unimplemented!()
         }
         write!(self.0, "\" fill-rule=\"{}\"", fill_rule_str(style.fill_rule)).unwrap();
         
@@ -67,5 +76,8 @@ impl Surface for Svg {
             path.contours().iter().format(" ")
         ).unwrap();
         id
+    }
+    fn texture(&mut self, width: u32, height: u32, data: &[u8], format: PixelFormat) -> Self::Image {
+        unimplemented!()
     }
 }
