@@ -110,6 +110,7 @@ fn paint(paint: Paint<Scene>) -> PaPaint {
         Paint::Image(image) => PaPaint::Pattern(Pattern {
             source: PatternSource::Image(image),
             flags: PatternFlags::empty(),
+            transform: Transform::default()
         })
     }
 }
