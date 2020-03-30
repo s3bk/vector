@@ -10,7 +10,7 @@ use pathfinder_renderer::{
 };
 use pathfinder_color::ColorU;
 use pathfinder_content::{
-    gradient::{Gradient, GradientGeometry},
+    gradient::{Gradient},
     pattern::{Pattern, Image, PatternSource, PatternFlags}
 };
 use pathfinder_geometry::{
@@ -53,7 +53,7 @@ impl Contour for PaContour {
     }
     #[inline]
     fn is_empty(&self) -> bool {
-        PaContour::is_empty(self)
+        self.len() == 0
     }
     #[inline]
     fn clear(&mut self) {
@@ -70,7 +70,7 @@ impl Outline for PaOutline {
     }
     #[inline]
     fn bounding_box(&self) -> Option<RectF> {
-        if self.len() > 0 {
+        if self.contours().len() > 0 {
             Some(self.bounds())
         } else {
             None
