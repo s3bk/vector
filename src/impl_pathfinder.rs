@@ -1,5 +1,5 @@
 use pathfinder_content::{
-    outline::{Contour as PaContour, Outline as PaOutline},
+    outline::{Contour as PaContour, Outline as PaOutline, ArcDirection},
     stroke::{StrokeStyle, LineCap, LineJoin, OutlineStrokeToFill},
     fill::FillRule as PaFillRule,
     effects::BlendMode
@@ -18,7 +18,7 @@ use pathfinder_geometry::{
     vector::Vector2I
 };
 use crate::{Contour, Vector, Surface, Outline, Transform, Paint, PathStyle, FillRule, PixelFormat};
-
+use std::sync::Arc;
 
 impl Contour for PaContour {
     #[inline]
@@ -45,6 +45,14 @@ impl Contour for PaContour {
     fn cubic_curve_to(&mut self, c1: Vector, c2: Vector, p: Vector) {
         trace!("Contour::cubic_curve_to({:?}, {:?}, {:?})", c1, c2, p);
         self.push_cubic(c1, c2, p);
+    }
+    #[inline]
+    fn arc(&mut self, transform: Transform, start_angle: f32, end_angle: f32, clockwise: bool) {
+        let direction = match clockwise {
+            false => ArcDirection::CCW,
+            true => ArcDirection::CW
+        };
+        self.push_arc(&transform, start_angle, end_angle, direction);
     }
     #[inline]
     fn close(&mut self) {
@@ -177,7 +185,7 @@ impl Surface for Scene {
             PixelFormat::Rgba32 => data.chunks(4).map(|c| ColorU { r: c[0], g: c[1], b: c[2], a: c[3] }).collect(),
         };
         assert_eq!(data.len(), width as usize * height as usize);
-        Image::new(Vector2I::new(width as i32, height as i32), data)
+        Image::new(Vector2I::new(width as i32, height as i32), Arc::new(data))
     }
 
 }

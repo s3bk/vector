@@ -1,3 +1,5 @@
+#![feature(tau_constant)]
+
 #[macro_use] extern crate log;
 
 use std::ops::{Add, Sub, Mul, Div};
@@ -18,6 +20,7 @@ pub trait Contour: Clone + Sized {
     fn line_to(&mut self, p: Vector);
     fn quadratic_curve_to(&mut self, c: Vector, p: Vector);
     fn cubic_curve_to(&mut self, c0: Vector, c1: Vector, p: Vector);
+    fn arc(&mut self, transform: Transform, start_angle: f32, end_angle: f32, clockwise: bool);
     fn close(&mut self);
     fn is_empty(&self) -> bool;
     fn clear(&mut self);
@@ -110,6 +113,16 @@ impl<O: Outline> PathBuilder<O> {
         self.line_to(rect.lower_left());
         self.close();
         self.state = PathState::End(rect.lower_left());
+    }
+    #[inline]
+    pub fn circle(&mut self, center: Vector, radius: f32) {
+        self.ellipse(center, Vector::splat(radius), 0.0);
+    }
+    #[inline]
+    pub fn ellipse(&mut self, center: Vector, radius: Vector, phi: f32) {
+        let transform = Transform::from_scale_rotation_translation(radius, phi, center);
+        self.contour.arc(transform, 0.0, core::f32::consts::TAU, false);
+        self.contour.close();
     }
     #[inline]
     pub fn close(&mut self) {
