@@ -177,14 +177,14 @@ pub enum FillRule {
 
 pub enum Paint<S: Surface> {
     Solid(Rgba8),
-    Image(S::Image)
+    Image(S::Image, Transform)
 }
 impl<S: Surface> Clone for Paint<S> {
     #[inline]
     fn clone(&self) -> Self {
         match *self {
             Paint::Solid(color) => Paint::Solid(color),
-            Paint::Image(ref image) => Paint::Image(image.clone())
+            Paint::Image(ref image, tr) => Paint::Image(image.clone(), tr)
         }
     }
 }
@@ -192,7 +192,7 @@ impl<S: Surface> fmt::Debug for Paint<S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Paint::Solid((r, g, b, a)) => write!(f, "Solid(rgba({}, {}, {}, {}))", r, g, b, a),
-            Paint::Image(_) => write!(f, "Image")
+            Paint::Image(_, _) => write!(f, "Image")
         }
     }
 }

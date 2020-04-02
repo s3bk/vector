@@ -115,10 +115,10 @@ pub struct Style {
 fn paint(paint: Paint<Scene>) -> PaPaint {
     match paint {
         Paint::Solid((r, g, b, a)) => PaPaint::Color(ColorU { r, g, b, a }),
-        Paint::Image(image) => PaPaint::Pattern(Pattern {
+        Paint::Image(image, tr) => PaPaint::Pattern(Pattern {
             source: PatternSource::Image(image),
             flags: PatternFlags::empty(),
-            transform: Transform::default()
+            transform: tr
         })
     }
 }
@@ -187,5 +187,4 @@ impl Surface for Scene {
         assert_eq!(data.len(), width as usize * height as usize);
         Image::new(Vector2I::new(width as i32, height as i32), Arc::new(data))
     }
-
 }

@@ -25,7 +25,7 @@ impl Contour for Path {
         self.ops.push(PathOp::CubicTo(point(c1), point(c2), point(p)));
     }
     fn arc(&mut self, transform: Transform, start_angle: f32, end_angle: f32, clockwise: bool) {
-
+        self.ops.push(PathOp::)
     }
     fn close(&mut self) {
         match self.ops.last() {
