@@ -1,5 +1,3 @@
-#![feature(tau_constant)]
-
 #[macro_use] extern crate log;
 
 use std::ops::{Add, Sub, Mul, Div};
@@ -120,8 +118,10 @@ impl<O: Outline> PathBuilder<O> {
     }
     #[inline]
     pub fn ellipse(&mut self, center: Vector, radius: Vector, phi: f32) {
-        let transform = Transform::from_scale_rotation_translation(radius, phi, center);
-        self.contour.arc(transform, 0.0, core::f32::consts::TAU, false);
+        let transform = Transform::from_translation(center)
+            * Transform::from_rotation(phi)
+            * Transform::from_scale(radius);
+        self.contour.arc(transform, 0.0, 2.0 * core::f32::consts::PI, false);
         self.contour.close();
     }
     #[inline]
@@ -207,11 +207,39 @@ impl<S: Surface> Paint<S> {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct LineStyle {
+    pub width: f32,
+    pub cap: LineCap,
+    pub join: LineJoin,
+}
+impl LineStyle {
+    pub fn default(width: f32) -> Self {
+        LineStyle {
+            width,
+            cap: LineCap::Butt,
+            join: LineJoin::Miter(width)
+        }
+    }
+}
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum LineCap {
+    Butt,
+    Square,
+    Round,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum LineJoin {
+    Miter(f32),
+    Bevel,
+    Round,
+}
+
 pub type Rgba8 = (u8, u8, u8, u8);
-#[derive(Debug)]
 pub struct PathStyle<S: Surface> {
     pub fill: Option<Paint<S>>,
-    pub stroke: Option<(Paint<S>, f32)>,
+    pub stroke: Option<(Paint<S>, LineStyle)>,
     pub fill_rule: FillRule
 }
 impl<S: Surface> Clone for PathStyle<S> {
@@ -220,6 +248,31 @@ impl<S: Surface> Clone for PathStyle<S> {
             fill: self.fill.clone(),
             stroke: self.stroke.clone(),
             fill_rule: self.fill_rule
+        }
+    }
+}
+impl<S: Surface> fmt::Debug for PathStyle<S> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("PathStyle")
+            .field("fill", &self.fill)
+            .field("stroke", &self.stroke)
+            .field("fill_rule", &self.fill_rule)
+            .finish()
+    }
+}
+impl<S: Surface> PathStyle<S> {
+    pub fn stroke(paint: Paint<S>, line: LineStyle) -> Self {
+        PathStyle {
+            fill: None,
+            stroke: Some((paint, line)),
+            fill_rule: FillRule::NonZero
+        }
+    }
+    pub fn fill(paint: Paint<S>) -> Self {
+        PathStyle {
+            fill: Some(paint),
+            stroke: None,
+            fill_rule: FillRule::NonZero
         }
     }
 }

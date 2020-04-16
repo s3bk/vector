@@ -1,6 +1,6 @@
 use pathfinder_content::{
     outline::{Contour as PaContour, Outline as PaOutline, ArcDirection},
-    stroke::{StrokeStyle, LineCap, LineJoin, OutlineStrokeToFill},
+    stroke::{StrokeStyle, OutlineStrokeToFill},
     fill::FillRule as PaFillRule,
     effects::BlendMode
 };
@@ -11,13 +11,14 @@ use pathfinder_renderer::{
 use pathfinder_color::ColorU;
 use pathfinder_content::{
     gradient::{Gradient},
-    pattern::{Pattern, Image, PatternSource, PatternFlags}
+    pattern::{Pattern, Image, PatternSource, PatternFlags},
+    stroke::{LineJoin as PaLineJoin, LineCap as PaLineCap}
 };
 use pathfinder_geometry::{
     rect::RectF,
     vector::Vector2I
 };
-use crate::{Contour, Vector, Surface, Outline, Transform, Paint, PathStyle, FillRule, PixelFormat};
+use crate::{Contour, Vector, Surface, Outline, Transform, Paint, PathStyle, FillRule, PixelFormat, LineCap, LineJoin};
 use std::sync::Arc;
 
 impl Contour for PaContour {
@@ -114,12 +115,12 @@ pub struct Style {
 #[inline]
 fn paint(paint: Paint<Scene>) -> PaPaint {
     match paint {
-        Paint::Solid((r, g, b, a)) => PaPaint::Color(ColorU { r, g, b, a }),
-        Paint::Image(image, tr) => PaPaint::Pattern(Pattern {
-            source: PatternSource::Image(image),
-            flags: PatternFlags::empty(),
-            transform: tr
-        })
+        Paint::Solid((r, g, b, a)) => PaPaint::from_color(ColorU { r, g, b, a }),
+        Paint::Image(image, tr) => {
+            let mut pattern = Pattern::from_image(image);
+            pattern.apply_transform(tr);
+            PaPaint::from_pattern(pattern)
+        }
     }
 }
 impl Into<PaFillRule> for FillRule {
@@ -127,7 +128,27 @@ impl Into<PaFillRule> for FillRule {
     fn into(self) -> PaFillRule {
         match self {
             FillRule::EvenOdd => PaFillRule::EvenOdd,
-            FillRule::NonZero => PaFillRule::Winding
+            FillRule::NonZero => PaFillRule::Winding,
+        }
+    }
+}
+impl Into<PaLineCap> for LineCap {
+    #[inline]
+    fn into(self) -> PaLineCap {
+        match self {
+            LineCap::Butt => PaLineCap::Butt,
+            LineCap::Square => PaLineCap::Square,
+            LineCap::Round => PaLineCap::Round,
+        }
+    }
+}
+impl Into<PaLineJoin> for LineJoin {
+    #[inline]
+    fn into(self) -> PaLineJoin {
+        match self {
+            LineJoin::Miter(w) => PaLineJoin::Miter(w),
+            LineJoin::Bevel => PaLineJoin::Bevel,
+            LineJoin::Round => PaLineJoin::Round,
         }
     }
 }
@@ -146,29 +167,32 @@ impl Surface for Scene {
     fn build_style(&mut self, style: PathStyle<Self>) -> Self::Style {
         Style {
             fill: style.fill.map(|color| self.push_paint(&paint(color))),
-            stroke: style.stroke.map(|(color, width)| (
+            stroke: style.stroke.map(|(color, line)| (
                 self.push_paint(&paint(color)),
                 StrokeStyle {
-                    line_width: width,
-                    line_cap: LineCap::Butt,
-                    line_join: LineJoin::Miter(width),
+                    line_width: line.width,
+                    line_cap: line.cap.into(),
+                    line_join: line.join.into(),
                 }
             )),
             fill_rule: style.fill_rule.into()
         }
     }
     fn draw_path(&mut self, path: Self::Outline, style: &Self::Style, clip: Option<&Self::ClipPath>) {
-        if let Some((paint, stroke_style)) = style.stroke {
+        let stroke = style.stroke.map(|(paint, stroke_style)| {
             let mut stroke_to_fill = OutlineStrokeToFill::new(&path, stroke_style);
             stroke_to_fill.offset();
             let outline = stroke_to_fill.into_outline();
             let mut draw_path = DrawPath::new(outline, paint);
             draw_path.set_fill_rule(style.fill_rule);
-            self.push_path(draw_path);
-        }
+            draw_path
+        });
         if let Some(paint) = style.fill {
             let mut draw_path = DrawPath::new(path, paint);
             draw_path.set_fill_rule(style.fill_rule);
+            self.push_path(draw_path);
+        }
+        if let Some(draw_path) = stroke {
             self.push_path(draw_path);
         }
     }

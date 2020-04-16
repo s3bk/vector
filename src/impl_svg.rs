@@ -49,8 +49,8 @@ impl Surface for Svg {
             _ => unimplemented!()
         }
         match style.stroke {
-            Some((Paint::Solid((r, g, b, a)), width)) => {
-                write!(self.0, "stroke: #{:02x}{:02x}{:02x}; stroke-width: {}; ", r, g, b, width).unwrap();
+            Some((Paint::Solid((r, g, b, a)), line_style)) => {
+                write!(self.0, "stroke: #{:02x}{:02x}{:02x}; stroke-width: {}; ", r, g, b, line_style.width).unwrap();
                 if a != 255 {
                     write!(self.0, "stroke-opacity: {}", a as f32 / 255.).unwrap();
                 }
